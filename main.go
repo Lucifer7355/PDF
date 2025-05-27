@@ -17,6 +17,8 @@ func main() {
 	http.HandleFunc("/health", handlers.HealthHandler)
 	http.HandleFunc("/merge", handlers.MergeHandler)
 	http.HandleFunc("/compress", handlers.CompressHandler)
+	http.HandleFunc("/split", handlers.SplitHandler)
+	http.HandleFunc("/pdf-security", handlers.EncryptOrDecryptHandler)
 
 	log.Println("PDF Toolbox running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
