@@ -16,7 +16,7 @@ func MergeHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	fmt.Println("[MergeHandler] ➜ Received request at", start.Format(time.RFC3339))
 
-	err := r.ParseMultipartForm(20 << 20) // 20MB
+	err := r.ParseMultipartForm(20 << 20) // 20MB memory limit for form parsing
 	if err != nil {
 		fmt.Println("[MergeHandler] ❌ Error parsing form:", err)
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -44,11 +44,17 @@ func MergeHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("[MergeHandler] ❌ Error creating temp file for file %d: %v\n", i+1, err)
 			continue
 		}
-		defer tmp.Close()
-		io.Copy(tmp, file)
+		defer os.Remove(tmp.Name()) // cleanup after handler exits
+
+		_, err = io.Copy(tmp, file)
+		if err != nil {
+			fmt.Printf("[MergeHandler] ❌ Error copying file %d: %v\n", i+1, err)
+			tmp.Close()
+			continue
+		}
+		tmp.Close()
 
 		inputPaths = append(inputPaths, tmp.Name())
-		defer os.Remove(tmp.Name())
 		fmt.Printf("[MergeHandler] ✅ File %d saved to: %s\n", i+1, tmp.Name())
 	}
 
@@ -63,14 +69,16 @@ func MergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("[MergeHandler] ✅ Merge successful. Output file:", out)
 
-	data, err := os.ReadFile(out)
+	// Open file for streaming
+	f, err := os.Open(out)
 	if err != nil {
-		fmt.Println("[MergeHandler] ❌ Failed to read merged file:", err)
-		http.Error(w, "Failed to read merged PDF", http.StatusInternalServerError)
+		fmt.Println("[MergeHandler] ❌ Failed to open merged file:", err)
+		http.Error(w, "Failed to open merged PDF", http.StatusInternalServerError)
 		return
 	}
+	defer f.Close()
 
-	url, err := utils.UploadToR2("merged/merged.pdf", data)
+	url, err := utils.UploadStreamToR2("merged/merged.pdf", f)
 	if err != nil {
 		fmt.Println("[MergeHandler] ❌ Failed to upload to R2:", err)
 		http.Error(w, "Failed to upload to R2", http.StatusInternalServerError)

@@ -38,9 +38,16 @@ func CompressHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not create temp file", http.StatusInternalServerError)
 		return
 	}
-	io.Copy(inFile, file)
-	inFile.Close()
 	defer os.Remove(inFile.Name())
+
+	_, err = io.Copy(inFile, file)
+	if err != nil {
+		fmt.Println("[CompressHandler] ❌ Error saving uploaded file:", err)
+		inFile.Close()
+		http.Error(w, "Failed to save uploaded file", http.StatusInternalServerError)
+		return
+	}
+	inFile.Close()
 
 	fmt.Println("[CompressHandler] ✅ Uploaded file saved to:", inFile.Name())
 
@@ -56,14 +63,16 @@ func CompressHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("[CompressHandler] ✅ Compression successful:", outFile)
 
-	data, err := os.ReadFile(outFile)
+	// Stream compressed file instead of reading it entirely into memory
+	f, err := os.Open(outFile)
 	if err != nil {
-		fmt.Println("[CompressHandler] ❌ Error reading compressed file:", err)
-		http.Error(w, "Failed to read compressed PDF", http.StatusInternalServerError)
+		fmt.Println("[CompressHandler] ❌ Error opening compressed file:", err)
+		http.Error(w, "Failed to open compressed PDF", http.StatusInternalServerError)
 		return
 	}
+	defer f.Close()
 
-	url, err := utils.UploadToR2("compressed/compressed.pdf", data)
+	url, err := utils.UploadStreamToR2("compressed/compressed.pdf", f)
 	if err != nil {
 		fmt.Println("[CompressHandler] ❌ Failed to upload to R2:", err)
 		http.Error(w, "Failed to upload to R2", http.StatusInternalServerError)

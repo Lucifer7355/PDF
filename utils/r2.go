@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -33,11 +34,11 @@ func R2Session() *s3.S3 {
 	}
 
 	fmt.Println("R2_REGION from env:", os.Getenv("R2_REGION"))
-
 	fmt.Println("[R2Session] ✅ R2 session initialized in", time.Since(start))
 	return s3.New(sess)
 }
 
+// UploadToR2 uploads byte slice data (for backward compatibility)
 func UploadToR2(key string, data []byte) (string, error) {
 	fmt.Printf("[UploadToR2] ➜ Uploading to R2: key = %s (%d bytes)\n", key, len(data))
 
@@ -55,10 +56,33 @@ func UploadToR2(key string, data []byte) (string, error) {
 		return "", err
 	}
 
-	// Updated to use Public Development URL from env
 	publicBase := os.Getenv("R2_PUBLIC_BASE")
 	url := fmt.Sprintf("%s/%s", publicBase, key)
 	fmt.Println("[UploadToR2] ✅ Upload successful. File available at:", url)
+
+	return url, nil
+}
+
+func UploadStreamToR2(key string, reader io.ReadSeeker) (string, error) {
+	fmt.Printf("[UploadStreamToR2] ➜ Streaming upload to R2: key = %s\n", key)
+
+	svc := R2Session()
+
+	_, err := svc.PutObject(&s3.PutObjectInput{
+		Bucket:      aws.String(os.Getenv("R2_BUCKET")),
+		Key:         aws.String(key),
+		Body:        reader,
+		ACL:         aws.String("public-read"),
+		ContentType: aws.String("application/pdf"),
+	})
+	if err != nil {
+		fmt.Println("[UploadStreamToR2] ❌ Streaming upload failed:", err)
+		return "", err
+	}
+
+	publicBase := os.Getenv("R2_PUBLIC_BASE")
+	url := fmt.Sprintf("%s/%s", publicBase, key)
+	fmt.Println("[UploadStreamToR2] ✅ Streaming upload successful. File available at:", url)
 
 	return url, nil
 }
