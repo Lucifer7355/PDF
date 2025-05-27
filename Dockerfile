@@ -1,5 +1,5 @@
 # Use a base image with Go
-FROM golang:1.21-bullseye
+FROM golang:1.23.2-bullseye
 
 # Install qpdf
 RUN apt-get update && apt-get install -y qpdf
