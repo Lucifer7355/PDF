@@ -1,20 +1,25 @@
-# Use a base image with Go
+# Use an official Golang image as base
 FROM golang:1.23.2-bullseye
 
-# Install qpdf
-RUN apt-get update && apt-get install -y qpdf
+# Install qpdf, unoconv, libreoffice for PDF conversion & security
+RUN apt-get update && apt-get install -y \
+    qpdf \
+    unoconv \
+    libreoffice \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy Go files
+# Copy app files
 COPY . .
 
-# Build your Go app
+# Build Go binary
 RUN go build -o server .
 
-# Expose your port
+# Expose port
 EXPOSE 8080
 
-# Run your app
+# Start app
 CMD ["./server"]
