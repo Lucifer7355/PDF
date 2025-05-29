@@ -29,6 +29,7 @@ func main() {
 	http.HandleFunc("/split", handlers.SplitHandler)
 	http.HandleFunc("/pdf-security", handlers.EncryptOrDecryptHandler)
 	http.HandleFunc("/convert-to-pdf", handlers.ConvertToPDFHandler)
+	http.HandleFunc("/reorder-pages", handlers.ReorderPagesHandler)
 
 	log.Println("📦 PDF Toolbox running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
