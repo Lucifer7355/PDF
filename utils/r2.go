@@ -17,6 +17,14 @@ func R2Session() *s3.S3 {
 	start := time.Now()
 	fmt.Println("[R2Session] ➜ Initializing Cloudflare R2 session...")
 
+	// Check for missing env vars and warn only if they are empty
+	requiredEnvVars := []string{"R2_REGION", "R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET", "R2_PUBLIC_BASE"}
+	for _, key := range requiredEnvVars {
+		if os.Getenv(key) == "" {
+			fmt.Printf("[R2Session] ⚠️  Environment variable %s is missing or empty\n", key)
+		}
+	}
+
 	sess, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(
 			os.Getenv("R2_ACCESS_KEY_ID"),
@@ -33,7 +41,6 @@ func R2Session() *s3.S3 {
 		panic(err)
 	}
 
-	fmt.Println("R2_REGION from env:", os.Getenv("R2_REGION"))
 	fmt.Println("[R2Session] ✅ R2 session initialized in", time.Since(start))
 	return s3.New(sess)
 }
