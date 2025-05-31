@@ -30,7 +30,7 @@ func main() {
 	http.HandleFunc("/pdf-security", handlers.EncryptOrDecryptHandler)
 	http.HandleFunc("/convert-to-pdf", handlers.ConvertToPDFHandler)
 	http.HandleFunc("/reorder-pages", handlers.ReorderPagesHandler)
-	http.HandleFunc("/sign-pdf", handlers.SignPDFHandler)
+	http.HandleFunc("/setMetadata", handlers.SetMetadataHandler)
 
 	log.Println("📦 PDF Toolbox running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
